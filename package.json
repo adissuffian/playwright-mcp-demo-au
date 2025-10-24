@@ -1,0 +1,17 @@
+{
+  "name": "playwright-mcp-demo-au",
+  "version": "1.0.0",
+  "description": "Automated testing of Domino's Australia website",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report"
+  },
+  "keywords": ["playwright", "testing", "automation"],
+  "author": "Adis Suffian",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
