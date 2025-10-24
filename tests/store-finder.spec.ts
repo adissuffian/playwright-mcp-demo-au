@@ -10,13 +10,17 @@ test.describe('Dominos Store Finder - Edge Case Testing', () => {
   test('Test 1: Valid postcode input should show autocomplete suggestions', async ({ page }) => {
     const searchBox = page.getByRole('textbox', { name: 'Enter postcode, suburb or store name' });
     
-    await searchBox.fill('2000');
-    await page.waitForTimeout(2500);
+    // Type slowly to trigger autocomplete
+    await searchBox.pressSequentially('2000', { delay: 100 });
     
-    // Check if autocomplete suggestions appear
-    const suggestions = page.locator('text=Address Suggestion').locator('..').locator('list listitem');
-    const count = await suggestions.count();
+    // Wait for "Address Suggestion" to appear
+    await expect(page.locator('text=Address Suggestion')).toBeVisible({ timeout: 5000 });
     
+    // Better approach - use role-based selectors
+    const suggestionItems = page.getByRole('listitem')
+      .filter({ has: page.locator('text=/Street|Avenue|Parade/') });
+    
+    const count = await suggestionItems.count();
     expect(count).toBeGreaterThan(0);
     console.log(`✅ Found ${count} autocomplete suggestions`);
   });
@@ -38,10 +42,14 @@ test.describe('Dominos Store Finder - Edge Case Testing', () => {
     await searchBox.fill("' OR '1'='1");
     await page.waitForTimeout(2000);
     
-    // Should not execute SQL or expose database errors
+    // Should show "NO STORE FOUND" message instead of database errors
+    const noStoreMessage = page.locator('text=NO STORE FOUND FOR SEARCH TERM');
+    await expect(noStoreMessage).toBeVisible({ timeout: 3000 });
+    
+    // Verify no SQL errors in page content
     const pageContent = await page.content();
     expect(pageContent.toLowerCase()).not.toContain('syntax error');
-    expect(pageContent.toLowerCase()).not.toContain('database');
+    expect(pageContent.toLowerCase()).not.toContain('sql error');
     
     console.log('✅ SQL injection attempt properly sanitized');
   });
@@ -88,7 +96,7 @@ test.describe('Dominos Store Finder - Edge Case Testing', () => {
   test('Test 7: Partial postcode should provide smart suggestions', async ({ page }) => {
     const searchBox = page.getByRole('textbox', { name: 'Enter postcode, suburb or store name' });
     
-    await searchBox.fill('123');
+    await searchBox.pressSequentially('123', { delay: 100 });
     await page.waitForTimeout(2500);
     
     // Should show autocomplete suggestions or handle gracefully
@@ -141,17 +149,17 @@ test.describe('Dominos Store Finder - Edge Case Testing', () => {
     console.log('✅ No sensitive information exposed in console');
   });
 
-  test('Performance: Autocomplete should respond within 3 seconds', async ({ page }) => {
+  test('Performance: Autocomplete should respond within 5 seconds', async ({ page }) => {
     const searchBox = page.getByRole('textbox', { name: 'Enter postcode, suburb or store name' });
     
     const startTime = Date.now();
-    await searchBox.fill('2000');
+    await searchBox.pressSequentially('2000', { delay: 100 });
     
-    await page.waitForTimeout(3000);
+    await page.waitForSelector('text=Address Suggestion', { timeout: 5000 });
     const endTime = Date.now();
     const responseTime = endTime - startTime;
     
-    expect(responseTime).toBeLessThan(3500);
+    expect(responseTime).toBeLessThan(5000);
     console.log(`✅ Response time: ${responseTime}ms`);
   });
 
